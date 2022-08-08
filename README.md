@@ -11,7 +11,6 @@ Changes to original
 ------------
 PHP 8.2+ support
 
-
 Dependencies
 ------------
 
