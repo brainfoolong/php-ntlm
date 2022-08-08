@@ -5,6 +5,9 @@
 
 namespace jamesiarmes\PhpNtlm;
 
+use BadMethodCallException;
+use RuntimeException;
+
 /**
  * Soap Client using Microsoft's NTLM Authentication.
  *
@@ -25,6 +28,11 @@ class SoapClient extends \SoapClient
      * @var array
      */
     protected $options;
+
+    protected $__last_request;
+    protected $__last_request_headers;
+    protected $__last_response;
+    protected $__last_response_headers;
 
     /**
      * {@inheritdoc}
@@ -57,7 +65,7 @@ class SoapClient extends \SoapClient
 
         // Verify that a user name and password were entered.
         if (empty($options['user']) || empty($options['password'])) {
-            throw new \BadMethodCallException(
+            throw new BadMethodCallException(
                 'A username and password is required.'
             );
         }
@@ -68,7 +76,7 @@ class SoapClient extends \SoapClient
     /**
      * {@inheritdoc}
      */
-    public function __doRequest($request, $location, $action, $version, $one_way = 0)
+    public function __doRequest($request, $location, $action, $version, $one_way = 0): ?string
     {
         $headers = $this->buildHeaders($action);
         $this->__last_request = $request;
@@ -88,7 +96,7 @@ class SoapClient extends \SoapClient
         // an exception.
         if ($response === false) {
             $this->__last_response = $this->__last_response_headers = false;
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 'Curl error: ' . curl_error($this->ch),
                 curl_errno($this->ch)
             );
@@ -103,7 +111,7 @@ class SoapClient extends \SoapClient
     /**
      * {@inheritdoc}
      */
-    public function __getLastRequestHeaders()
+    public function __getLastRequestHeaders(): ?string
     {
         return implode("\n", $this->__last_request_headers) . "\n";
     }
@@ -111,15 +119,15 @@ class SoapClient extends \SoapClient
     /**
      * Returns the response code from the last request
      *
-     * @return integer
+     * @return int
      *
-     * @throws \BadMethodCallException
+     * @throws BadMethodCallException
      *   If no cURL resource has been initialized.
      */
     public function getResponseCode()
     {
         if (empty($this->ch)) {
-            throw new \BadMethodCallException('No cURL resource has been '
+            throw new BadMethodCallException('No cURL resource has been '
                 . 'initialized. This is probably because no request has not '
                 . 'been made.');
         }
@@ -189,14 +197,14 @@ class SoapClient extends \SoapClient
     protected function curlOptions($action, $request)
     {
         $options = $this->options['curlopts'] + array(
-            CURLOPT_SSL_VERIFYPEER => true,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HTTPHEADER => $this->buildHeaders($action),
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_HTTPAUTH => CURLAUTH_BASIC | CURLAUTH_NTLM,
-            CURLOPT_USERPWD => $this->options['user'] . ':'
-                               . $this->options['password'],
-        );
+                CURLOPT_SSL_VERIFYPEER => true,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_HTTPHEADER => $this->buildHeaders($action),
+                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                CURLOPT_HTTPAUTH => CURLAUTH_BASIC | CURLAUTH_NTLM,
+                CURLOPT_USERPWD => $this->options['user'] . ':'
+                    . $this->options['password'],
+            );
 
         // We shouldn't allow these options to be overridden.
         $options[CURLOPT_HEADER] = true;
